@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bleppy Bio</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'JetBrains Mono', monospace; cursor: crosshair; }
+    body { background: #0e0e0e; color: #f5f5f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; position: relative; filter: grayscale(1) contrast(1.3) brightness(0.8); }
+
+    /* Video Background */
+    video#bgVideo { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; mix-blend-mode: lighten; }
+
+    /* VCR glitch overlay */
+    #vcrOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; background: repeating-linear-gradient(rgba(0,255,0,0.03) 0px, rgba(0,255,0,0.03) 1px, transparent 1px, transparent 2px); z-index: -1; animation: scanlines 0.5s linear infinite, glitch 0.2s infinite; }
+    @keyframes scanlines { 0% { background-position: 0 0; } 100% { background-position: 0 100%; } }
+    @keyframes glitch { 0% { transform: translate(0px,0px); } 20% { transform: translate(-2px,2px); } 40% { transform: translate(2px,-2px); } 60% { transform: translate(-1px,1px); } 80% { transform: translate(1px,-1px); } 100% { transform: translate(0px,0px); } }
+
+    canvas#particles { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+
+    .card { position: relative; background: rgba(22, 22, 22, 0.85); border-radius: 20px; padding: 2rem; width: 900px; display: flex; align-items: center; justify-content: flex-start; box-shadow: 0 0 30px rgba(0, 255, 0, 0.3); border: 1px solid #00ff88; transition: transform 0.3s ease; z-index: 1; gap: 3rem; }
+    .card:hover { transform: scale(1.02); }
+
+    .avatar img { width: 160px; height: 160px; border-radius: 50%; object-fit: cover; border: 3px solid #00ff88; }
+    .info { flex: 1; text-align: left; }
+
+    h1 { font-weight: 600; font-size: 2rem; margin-bottom: 0.3rem; color: #00ff88; }
+    p.subtitle { font-size: 1rem; color: #aaa; margin-bottom: 0.8rem; }
+
+    /* Badges */
+    .badges { display: flex; gap: 10px; margin-bottom: 1.5rem; }
+    .badge { background: rgba(0,255,136,0.2); color: #00ff88; border: 1px solid #00ff88; padding: 0.25rem 0.6rem; border-radius: 12px; font-size: 0.8rem; font-weight: 500; text-align: center; transition: all 0.3s ease; animation: pulse 2s infinite; }
+    .badge:hover { background: rgba(0,255,136,0.5); box-shadow: 0 0 8px #00ff88, 0 0 12px #00ff88; transform: scale(1.1); }
+    @keyframes pulse { 0%,100%{ transform: scale(1); } 50% { transform: scale(1.05); } }
+
+    .links { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, auto); gap: 1rem; }
+
+    .link-btn { background: #1f1f1f; border: 1px solid #2a2a2a; border-radius: 12px; color: #f5f5f5; text-decoration: none; font-size: 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s ease; padding: 0.8rem; height: auto; }
+    .link-btn:hover { background: #2b2b2b; border-color: #00ff88; transform: translateY(-3px); }
+    .link-btn i { color: #00ff88; font-size: 1.5rem; margin-bottom: 0.3rem; }
+    .link-title { font-size: 0.9rem; color: #00ff88; }
+    .link-username { font-size: 0.75rem; color: #aaa; }
+
+    /* Music Player */
+    #musicPlayer { position: fixed; bottom: 20px; right: 20px; background: rgba(22,22,22,0.85); border: 1px solid #00ff88; border-radius: 12px; padding: 10px 15px; display: flex; align-items: center; gap: 10px; z-index: 10; }
+    #musicVisualizer { display: flex; align-items: flex-end; gap: 3px; height: 24px; }
+    .music-bar { width: 4px; height: 4px; background: #00ff88; border-radius: 2px; }
+    #currentSong { font-size: 0.9rem; color: #00ff88; }
+
+    /* Entry Overlay */
+    #entryOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; backdrop-filter: blur(10px); background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 20; flex-direction: column; text-align: center; cursor: pointer; transition: opacity 1s ease, transform 1s ease; }
+    #entryOverlay h1 { color: #00ff88; font-size: 3rem; pointer-events: none; }
+    #entryOverlay.hidden { opacity: 0; transform: scale(1.05); pointer-events: none; }
+  </style>
+</head>
+<body>
+  <video id="bgVideo" autoplay muted loop>
+    <source src="Backround.mp4" type="video/mp4">
+  </video>
+  <div id="vcrOverlay"></div>
+  <canvas id="particles"></canvas>
+
+  <div class="card">
+    <div class="avatar">
+      <img src="https://i.pinimg.com/1200x/83/7a/7a/837a7a0107b17b8448d4ab14277cc016.jpg" alt="Bleppy Profile Picture">
+    </div>
+    <div class="info">
+      <h1>Bleppy</h1>
+      <p class="subtitle">is tuff in discord</p>
+
+      <!-- Badges -->
+      <div class="badges">
+        <span class="badge">Game Developer</span>
+        <span class="badge">Editor</span>
+        <span class="badge">Graphic Designer</span>
+      </div>
+
+      <div class="links">
+        <a href="discord://-/users/1259236756935675914" class="link-btn">
+          <i class="fa-brands fa-discord"></i><span class="link-title">Discord</span><span class="link-username">@unknown.blep</span>
+        </a>
+        <a href="https://discord.gg/6C9CGsNK" class="link-btn">
+          <i class="fa-brands fa-discord"></i><span class="link-title">Server</span><span class="link-username">friend-group</span>
+        </a>
+        <a href="https://discord.gg/EvNfT8TetX" class="link-btn">
+          <i class="fa-brands fa-discord"></i><span class="link-title">Server</span><span class="link-username">uplinx</span>
+        </a>
+        <a href="https://youtube.com/@blepeee?si=u_khHrIV9WLyJ_gx" class="link-btn">
+          <i class="fa-brands fa-youtube"></i><span class="link-title">Youtube</span><span class="link-username">@blepeee</span>
+        </a>
+        <a class="link-btn"><i class="fa-solid fa-xmark"></i><span class="link-title">Coming Soon</span><span class="link-username">...</span></a>
+        <a class="link-btn"><i class="fa-solid fa-xmark"></i><span class="link-title">Coming Soon</span><span class="link-username">...</span></a>
+      </div>
+    </div>
+  </div>
+
+  <div id="musicPlayer">
+    <div id="musicVisualizer">
+      <div class="music-bar"></div>
+      <div class="music-bar"></div>
+      <div class="music-bar"></div>
+      <div class="music-bar"></div>
+      <div class="music-bar"></div>
+    </div>
+    <div id="currentSong">just another useless life to everyone - imar</div>
+    <audio id="bgMusic" src="Music.mp3" loop></audio>
+  </div>
+
+  <div id="entryOverlay"><div class="overlayContent"><h1>Welcome to Bleppy's World</h1></div></div>
+
+  <script>
+    // Particle System
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const particles = [];
+    class Particle { constructor(){ this.x=Math.random()*canvas.width; this.y=Math.random()*canvas.height; this.size=Math.random()*2+1; this.speedX=(Math.random()-0.5); this.speedY=(Math.random()-0.5); } update(){ this.x+=this.speedX; this.y+=this.speedY; if(this.x<0||this.x>canvas.width)this.speedX*=-1; if(this.y<0||this.y>canvas.height)this.speedY*=-1; } draw(){ ctx.fillStyle='#00ff88'; ctx.beginPath(); ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.fill(); } }
+    for(let i=0;i<80;i++){ particles.push(new Particle()); }
+    function animateParticles(){ ctx.clearRect(0,0,canvas.width,canvas.height); particles.forEach(p=>{ p.update(); p.draw(); }); requestAnimationFrame(animateParticles); }
+    animateParticles();
+    window.addEventListener('resize',()=>{ canvas.width=window.innerWidth; canvas.height=window.innerHeight; });
+
+    // Entry Overlay
+    const overlay = document.getElementById('entryOverlay');
+    const bgMusic = document.getElementById('bgMusic');
+    overlay.addEventListener('click',()=>{
+      overlay.classList.add('hidden');
+      overlay.addEventListener('transitionend',()=>{ overlay.style.display='none'; },{once:true});
+      if(bgMusic.paused){ bgMusic.play().catch(e=>console.log(e)); }
+      if(audioCtx.state==='suspended'){ audioCtx.resume(); }
+    });
+
+    // Web Audio API Music Visualizer
+    const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const audioSource = audioCtx.createMediaElementSource(bgMusic);
+    const analyser = audioCtx.createAnalyser();
+    audioSource.connect(analyser);
+    analyser.connect(audioCtx.destination);
+    analyser.fftSize = 64;
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    const bars = document.querySelectorAll('#musicVisualizer .music-bar');
+
+    function animateBars(){
+      requestAnimationFrame(animateBars);
+      analyser.getByteFrequencyData(dataArray);
+      for(let i=0;i<bars.length;i++){
+        const height = Math.max(4, dataArray[i]/12);
+        bars[i].style.height = height+'px';
+      }
+    }
+    animateBars();
+  </script>
+</body>
+</html>
